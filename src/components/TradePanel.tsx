@@ -6,8 +6,14 @@ import type { Coin } from "../types";
 
 const QUICK = [0.25, 0.5, 0.75, 1];
 
-export function TradePanel({ coin }: { coin: Coin | null }) {
-  const { user, ready, cashEur, executeTrade } = usePortfolio();
+export function TradePanel({
+  coin,
+  onRequireKyc,
+}: {
+  coin: Coin | null;
+  onRequireKyc?: () => void;
+}) {
+  const { user, ready, cashEur, executeTrade, kycStatus } = usePortfolio();
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [amountEur, setAmountEur] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -51,7 +57,13 @@ export function TradePanel({ coin }: { coin: Coin | null }) {
       setMsg(`Orden ${side === "buy" ? "de compra" : "de venta"} simulada ejecutada.`);
       setAmountEur("");
     } catch (e: any) {
-      setMsg(e?.message ?? "Error al operar.");
+      const m = e?.message ?? "";
+      if (m.startsWith("KYC_REQUIRED")) {
+        setMsg("Debes verificar tu identidad (KYC) para operar.");
+        onRequireKyc?.();
+      } else {
+        setMsg(m || "Error al operar.");
+      }
     } finally {
       setBusy(false);
     }
@@ -61,6 +73,18 @@ export function TradePanel({ coin }: { coin: Coin | null }) {
 
   return (
     <div className="card p-5">
+      {user && kycStatus !== "verified" && (
+        <button
+          onClick={onRequireKyc}
+          className="mb-4 flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm transition-colors hover:bg-amber-100"
+        >
+          <span className="font-medium text-amber-800">
+            {kycStatus === "pending" ? "Verificación en proceso…" : "Verifica tu identidad (KYC)"}
+          </span>
+          <span className="text-amber-600">{kycStatus === "pending" ? "…" : "→"}</span>
+        </button>
+      )}
+
       <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 text-sm font-semibold">
         {(["buy", "sell"] as const).map((s) => (
           <button

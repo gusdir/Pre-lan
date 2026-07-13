@@ -8,6 +8,7 @@ import { TradePanel } from "./components/TradePanel";
 import { Portfolio } from "./components/Portfolio";
 import { Activity } from "./components/Activity";
 import { AuthModal } from "./components/AuthModal";
+import { KycModal } from "./components/KycModal";
 
 // Carga diferida del gráfico (recharts) para reducir el bundle inicial.
 const PriceChart = lazy(() =>
@@ -15,12 +16,21 @@ const PriceChart = lazy(() =>
 );
 
 function Shell() {
-  const { user, ready } = usePortfolio();
+  const { user, ready, kycStatus } = usePortfolio();
   const { coins, error, live } = useMarketPrices();
   const [tab, setTab] = useState<Tab>("mercados");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [showKyc, setShowKyc] = useState(false);
   const selected: Coin | null = coins.find((c) => c.id === selectedId) ?? null;
+
+  // Cierra el modal KYC automáticamente al quedar verificado.
+  useEffect(() => {
+    if (showKyc && kycStatus === "verified") {
+      const t = setTimeout(() => setShowKyc(false), 800);
+      return () => clearTimeout(t);
+    }
+  }, [showKyc, kycStatus]);
 
   // Selección por defecto del primer activo (estable frente a updates en vivo).
   useEffect(() => {
@@ -80,7 +90,7 @@ function Shell() {
               >
                 <PriceChart coin={selected} />
               </Suspense>
-              <TradePanel coin={selected} />
+              <TradePanel coin={selected} onRequireKyc={() => setShowKyc(true)} />
             </div>
           </div>
         )}
@@ -98,7 +108,7 @@ function Shell() {
               >
                 <PriceChart coin={selected} />
               </Suspense>
-              <TradePanel coin={selected} />
+              <TradePanel coin={selected} onRequireKyc={() => setShowKyc(true)} />
             </div>
           </div>
         )}
@@ -109,6 +119,7 @@ function Shell() {
       </main>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showKyc && <KycModal onClose={() => setShowKyc(false)} />}
     </div>
   );
 }

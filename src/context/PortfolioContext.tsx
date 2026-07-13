@@ -11,7 +11,7 @@ import { supabase } from "../lib/supabase";
 import { START_CASH_EUR } from "../lib/trading";
 import { tradingProvider, type OrderInput } from "../lib/trading";
 import { depositQuote, withdrawQuote, MIN_DEPOSIT_EUR } from "../lib/account";
-import type { Holding, Trade } from "../types";
+import type { Holding, KycPayload, KycStatus, Trade } from "../types";
 
 interface PortfolioState {
   cashEur: number;
@@ -25,12 +25,14 @@ interface PortfolioContextValue {
   cashEur: number;
   holdings: Record<string, Holding>;
   trades: Trade[];
+  kycStatus: KycStatus;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   executeTrade: (input: OrderInput) => Promise<void>;
   deposit: (amountEur: number) => Promise<void>;
   withdraw: (amountEur: number) => Promise<void>;
+  submitKyc: (payload: KycPayload) => Promise<void>;
   reload: () => Promise<void>;
 }
 
@@ -43,6 +45,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [cashEur, setCashEur] = useState(START_CASH_EUR);
   const [holdings, setHoldings] = useState<Record<string, Holding>>({});
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [kycStatus, setKycStatus] = useState<KycStatus>("none");
 
   const user = session?.user ?? null;
 
@@ -86,6 +89,12 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         });
       }
       await loadTrades();
+      const { data: kyc } = await supabase
+        .from("kyc")
+        .select("status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setKycStatus((kyc?.status as KycStatus) ?? "none");
       setReady(true);
     })();
     return () => {
@@ -113,6 +122,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
 
   async function executeTrade(input: OrderInput) {
     if (!user) throw new Error("Inicia sesión para operar");
+    if (kycStatus !== "verified")
+      throw new Error("KYC_REQUIRED:Debes verificar tu identidad para operar.");
     // El proveedor (demo o real) calcula la orden y el nuevo estado de cartera.
     const result = tradingProvider.placeOrder({ cashEur, holdings }, input);
     setCashEur(result.cashEur);
@@ -122,6 +133,28 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     const row = { ...result.trade, user_id: user.id };
     const { data } = await supabase.from("trades").insert(row).select().single();
     if (data) setTrades((prev) => [data as Trade, ...prev]);
+  }
+
+  async function submitKyc(payload: KycPayload) {
+    if (!user) throw new Error("Inicia sesión para operar");
+    // Demo: marca como "pending" y tras una revisión simulada lo aprueba.
+    await supabase.from("kyc").upsert({
+      user_id: user.id,
+      status: "pending",
+      full_name: payload.full_name,
+      document_type: payload.document_type,
+      document_number: payload.document_number,
+      country: payload.country,
+      submitted_at: new Date().toISOString(),
+    });
+    setKycStatus("pending");
+    setTimeout(async () => {
+      await supabase
+        .from("kyc")
+        .update({ status: "verified", verified_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+      setKycStatus("verified");
+    }, 1500);
   }
 
   async function deposit(amountEur: number) {
@@ -175,6 +208,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       cashEur,
       holdings,
       trades,
+      kycStatus,
       signIn: async (email, password) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -188,13 +222,15 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         setCashEur(START_CASH_EUR);
         setHoldings({});
         setTrades([]);
+        setKycStatus("none");
       },
       executeTrade,
       deposit,
       withdraw,
+      submitKyc,
       reload: loadTrades,
     }),
-    [user, loadingAuth, ready, cashEur, holdings, trades]
+    [user, loadingAuth, ready, cashEur, holdings, trades, kycStatus]
   );
 
   return (

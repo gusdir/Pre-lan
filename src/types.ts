@@ -28,3 +28,12 @@ export interface Trade {
 }
 
 export type Tab = "mercados" | "operar" | "cartera" | "actividad";
+
+export type KycStatus = "none" | "pending" | "verified";
+
+export interface KycPayload {
+  full_name: string;
+  document_type: string;
+  document_number: string;
+  country: string;
+}
