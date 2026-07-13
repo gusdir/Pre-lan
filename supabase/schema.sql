@@ -13,7 +13,7 @@ create table if not exists public.trades (
   user_id uuid not null references auth.users (id) on delete cascade,
   coin_id text not null,
   symbol text not null,
-  side text not null check (side in ('buy', 'sell')),
+  side text not null check (side in ('buy', 'sell', 'deposit', 'withdraw')),
   amount numeric not null,
   price_eur numeric not null,
   value_eur numeric not null,

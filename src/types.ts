@@ -20,7 +20,7 @@ export interface Trade {
   user_id: string;
   coin_id: string;
   symbol: string;
-  side: "buy" | "sell";
+  side: "buy" | "sell" | "deposit" | "withdraw";
   amount: number;
   price_eur: number;
   value_eur: number;

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { usePortfolio } from "../context/PortfolioContext";
 import { eur } from "../lib/format";
+import { FundsModal } from "./FundsModal";
 import type { Coin } from "../types";
 
 export function Portfolio({ coins }: { coins: Coin[] }) {
   const { cashEur, holdings } = usePortfolio();
+  const [funds, setFunds] = useState<"deposit" | "withdraw" | null>(null);
   const priceOf = (id: string) => coins.find((c) => c.id === id)?.current_price ?? 0;
 
   const positions = Object.values(holdings).map((h) => {
@@ -17,8 +20,26 @@ export function Portfolio({ coins }: { coins: Coin[] }) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-gray-200 p-5">
-        <p className="text-sm text-gray-500">Valor total (demo)</p>
-        <p className="text-3xl font-bold">{eur(total)}</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-gray-500">Valor total (demo)</p>
+            <p className="text-3xl font-bold">{eur(total)}</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFunds("deposit")}
+              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+            >
+              Ingresar
+            </button>
+            <button
+              onClick={() => setFunds("withdraw")}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+            >
+              Retirar
+            </button>
+          </div>
+        </div>
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
             <p className="text-gray-500">Efectivo</p>
@@ -64,6 +85,7 @@ export function Portfolio({ coins }: { coins: Coin[] }) {
           </div>
         )}
       </div>
+      {funds && <FundsModal mode={funds} onClose={() => setFunds(null)} />}
     </div>
   );
 }

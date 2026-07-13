@@ -10,6 +10,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { START_CASH_EUR } from "../lib/trading";
 import { tradingProvider, type OrderInput } from "../lib/trading";
+import { depositQuote, withdrawQuote, MIN_DEPOSIT_EUR } from "../lib/account";
 import type { Holding, Trade } from "../types";
 
 interface PortfolioState {
@@ -28,6 +29,8 @@ interface PortfolioContextValue {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   executeTrade: (input: OrderInput) => Promise<void>;
+  deposit: (amountEur: number) => Promise<void>;
+  withdraw: (amountEur: number) => Promise<void>;
   reload: () => Promise<void>;
 }
 
@@ -121,6 +124,49 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     if (data) setTrades((prev) => [data as Trade, ...prev]);
   }
 
+  async function deposit(amountEur: number) {
+    if (!user) throw new Error("Inicia sesión para operar");
+    if (amountEur < MIN_DEPOSIT_EUR)
+      throw new Error(`El mínimo es ${MIN_DEPOSIT_EUR} €`);
+    const { feeEur, netEur } = depositQuote(amountEur);
+    const newCash = cashEur + netEur;
+    setCashEur(newCash);
+    await persist({ cashEur: newCash, holdings });
+    const row = {
+      user_id: user.id,
+      coin_id: "eur",
+      symbol: "eur",
+      side: "deposit" as const,
+      amount: netEur,
+      price_eur: 1,
+      value_eur: amountEur,
+    };
+    const { data } = await supabase.from("trades").insert(row).select().single();
+    if (data) setTrades((prev) => [data as Trade, ...prev]);
+    void feeEur;
+  }
+
+  async function withdraw(amountEur: number) {
+    if (!user) throw new Error("Inicia sesión para operar");
+    const { feeEur, grossEur } = withdrawQuote(amountEur);
+    if (grossEur > cashEur) throw new Error("Saldo insuficiente");
+    const newCash = cashEur - grossEur;
+    setCashEur(newCash);
+    await persist({ cashEur: newCash, holdings });
+    const row = {
+      user_id: user.id,
+      coin_id: "eur",
+      symbol: "eur",
+      side: "withdraw" as const,
+      amount: amountEur,
+      price_eur: 1,
+      value_eur: grossEur,
+    };
+    const { data } = await supabase.from("trades").insert(row).select().single();
+    if (data) setTrades((prev) => [data as Trade, ...prev]);
+    void feeEur;
+  }
+
   const value = useMemo<PortfolioContextValue>(
     () => ({
       user,
@@ -144,6 +190,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         setTrades([]);
       },
       executeTrade,
+      deposit,
+      withdraw,
       reload: loadTrades,
     }),
     [user, loadingAuth, ready, cashEur, holdings, trades]

@@ -19,29 +19,41 @@ export function Activity() {
         <p className="py-6 text-center text-sm text-gray-400">Sin operaciones aún.</p>
       ) : (
         <div className="space-y-2">
-          {trades.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center justify-between border-b border-gray-100 py-2 text-sm last:border-0"
-            >
-              <div>
-                <span
-                  className={`mr-2 font-medium uppercase ${
-                    t.side === "buy" ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {t.side === "buy" ? "Compra" : "Venta"}
-                </span>
-                <span className="uppercase text-gray-600">{t.symbol}</span>
-              </div>
-              <div className="text-right">
-                <div className="font-medium">{eur(t.value_eur)}</div>
-                <div className="text-xs text-gray-400">
-                  {new Date(t.created_at).toLocaleString("es-ES")}
+          {trades.map((t) => {
+            const isIn = t.side === "buy" || t.side === "deposit";
+            const label =
+              t.side === "buy"
+                ? "Compra"
+                : t.side === "sell"
+                ? "Venta"
+                : t.side === "deposit"
+                ? "Ingreso"
+                : "Retiro";
+            const sym = t.symbol === "eur" ? "EUR" : t.symbol.toUpperCase();
+            return (
+              <div
+                key={t.id}
+                className="flex items-center justify-between border-b border-gray-100 py-2 text-sm last:border-0"
+              >
+                <div>
+                  <span
+                    className={`mr-2 font-medium uppercase ${
+                      isIn ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                  <span className="uppercase text-gray-600">{sym}</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-medium">{eur(t.value_eur)}</div>
+                  <div className="text-xs text-gray-400">
+                    {new Date(t.created_at).toLocaleString("es-ES")}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
