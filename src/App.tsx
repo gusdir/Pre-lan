@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { PortfolioProvider, usePortfolio } from "./context/PortfolioContext";
-import { fetchMarkets } from "./lib/market";
+import { useMarketPrices } from "./hooks/useMarketPrices";
 import type { Coin, Tab } from "./types";
 import { Navbar } from "./components/Navbar";
 import { Markets } from "./components/Markets";
@@ -12,31 +12,16 @@ import { AuthModal } from "./components/AuthModal";
 
 function Shell() {
   const { user, ready } = usePortfolio();
+  const { coins, error, live } = useMarketPrices();
   const [tab, setTab] = useState<Tab>("mercados");
-  const [coins, setCoins] = useState<Coin[]>([]);
-  const [selected, setSelected] = useState<Coin | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
-  const refreshTimer = useRef<number | null>(null);
+  const selected: Coin | null = coins.find((c) => c.id === selectedId) ?? null;
 
-  // Precios en vivo (CoinGecko, EUR). Demo: sin clave, rate-limited.
+  // Selección por defecto del primer activo (estable frente a updates en vivo).
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchMarkets();
-        setCoins(data);
-        setSelected((prev) => prev ?? data[0] ?? null);
-        setError(null);
-      } catch {
-        setError("No se pudieron cargar los precios (límite de API o sin red).");
-      }
-    };
-    load();
-    refreshTimer.current = window.setInterval(load, 60_000); // cada 60s
-    return () => {
-      if (refreshTimer.current) window.clearInterval(refreshTimer.current);
-    };
-  }, []);
+    if (!selectedId && coins.length > 0) setSelectedId(coins[0].id);
+  }, [coins, selectedId]);
 
   function guard(action: Tab) {
     if ((action === "operar" || action === "cartera") && !user) {
@@ -50,12 +35,24 @@ function Shell() {
     <div className="min-h-screen bg-white text-gray-900">
       <div className="demo-banner px-4 py-1.5 text-center text-xs">
         DEMO · Entorno de prueba para España · No se mueve dinero real · Precios de
-        CoinGecko (EUR)
+        Coinbase (EUR) en vivo
       </div>
 
       <Navbar tab={tab} onTab={guard} />
 
       <main className="mx-auto max-w-6xl px-4 py-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h1 className="text-xl font-bold">Mercados</h1>
+          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                live ? "animate-pulse bg-green-500" : "bg-gray-300"
+              }`}
+            />
+            {live ? "En vivo" : error ? "Sin conexión" : "Conectando…"}
+          </span>
+        </div>
+
         {error && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
             {error}
@@ -68,7 +65,7 @@ function Shell() {
 
         {tab === "mercados" && (
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-            <Markets coins={coins} onSelect={setSelected} />
+            <Markets coins={coins} onSelect={(c) => setSelectedId(c.id)} />
             <div className="space-y-4">
               <PriceChart coin={selected} />
               <TradePanel coin={selected} />
@@ -78,7 +75,7 @@ function Shell() {
 
         {tab === "operar" && (
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-            <Markets coins={coins} onSelect={setSelected} />
+            <Markets coins={coins} onSelect={(c) => setSelectedId(c.id)} />
             <div className="space-y-4">
               <PriceChart coin={selected} />
               <TradePanel coin={selected} />

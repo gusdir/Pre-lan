@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { fetchHistory } from "../lib/market";
+import { fetchHistory } from "../lib/market/prices";
 import { eur } from "../lib/format";
 import type { Coin } from "../types";
 

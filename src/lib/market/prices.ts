@@ -1,4 +1,4 @@
-import type { Coin } from "../types";
+import type { Coin } from "../../types";
 
 // CoinGecko API pública (gratis, sin clave). España => precios en EUR.
 // NOTA demo: sin clave está rate-limited (~10-30 req/min). Suficiente para prototipo.
