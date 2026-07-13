@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { PortfolioProvider, usePortfolio } from "./context/PortfolioContext";
 import { useMarketPrices } from "./hooks/useMarketPrices";
 import type { Coin, Tab } from "./types";
 import { Navbar } from "./components/Navbar";
 import { Markets } from "./components/Markets";
-import { PriceChart } from "./components/PriceChart";
 import { TradePanel } from "./components/TradePanel";
 import { Portfolio } from "./components/Portfolio";
 import { Activity } from "./components/Activity";
 import { AuthModal } from "./components/AuthModal";
+
+// Carga diferida del gráfico (recharts) para reducir el bundle inicial.
+const PriceChart = lazy(() =>
+  import("./components/PriceChart").then((m) => ({ default: m.PriceChart }))
+);
 
 function Shell() {
   const { user, ready } = usePortfolio();
@@ -67,7 +71,15 @@ function Shell() {
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
             <Markets coins={coins} onSelect={(c) => setSelectedId(c.id)} />
             <div className="space-y-4">
-              <PriceChart coin={selected} />
+              <Suspense
+                fallback={
+                  <div className="rounded-2xl border border-gray-200 p-4 text-center text-sm text-gray-400">
+                    Cargando gráfico…
+                  </div>
+                }
+              >
+                <PriceChart coin={selected} />
+              </Suspense>
               <TradePanel coin={selected} />
             </div>
           </div>
@@ -77,7 +89,15 @@ function Shell() {
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
             <Markets coins={coins} onSelect={(c) => setSelectedId(c.id)} />
             <div className="space-y-4">
-              <PriceChart coin={selected} />
+              <Suspense
+                fallback={
+                  <div className="rounded-2xl border border-gray-200 p-4 text-center text-sm text-gray-400">
+                    Cargando gráfico…
+                  </div>
+                }
+              >
+                <PriceChart coin={selected} />
+              </Suspense>
               <TradePanel coin={selected} />
             </div>
           </div>
