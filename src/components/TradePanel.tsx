@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePortfolio } from "../context/PortfolioContext";
+import { tradingProvider } from "../lib/trading";
 import { eur } from "../lib/format";
 import type { Coin } from "../types";
 
@@ -19,7 +20,18 @@ export function TradePanel({ coin }: { coin: Coin | null }) {
   }
 
   const euros = parseFloat(amountEur) || 0;
-  const units = coin.current_price > 0 ? euros / coin.current_price : 0;
+  // Preview vía el proveedor (comisión + unidades estimadas).
+  const quote = useMemo(
+    () =>
+      tradingProvider.quote({
+        coinId: coin!.id,
+        symbol: coin!.symbol,
+        side,
+        amountEur: euros,
+        priceEur: coin!.current_price,
+      }),
+    [coin, side, euros]
+  );
 
   async function submit() {
     setMsg(null);
@@ -29,14 +41,13 @@ export function TradePanel({ coin }: { coin: Coin | null }) {
       return setMsg("Saldo insuficiente (demo).");
     setBusy(true);
     try {
-      // DEMO: no se mueve dinero real. Simula la ejecución a precio de mercado.
+      // DEMO: no se mueve dinero real. El proveedor simula la ejecución.
       await executeTrade({
-        coin_id: coin!.id,
+        coinId: coin!.id,
         symbol: coin!.symbol,
         side,
-        amount: units,
-        price_eur: coin!.current_price,
-        value_eur: euros,
+        amountEur: euros,
+        priceEur: coin!.current_price,
       });
       setMsg(`Orden ${side === "buy" ? "de compra" : "de venta"} simulada ejecutada.`);
       setAmountEur("");
@@ -85,8 +96,12 @@ export function TradePanel({ coin }: { coin: Coin | null }) {
       <div className="mt-2 flex justify-between text-xs text-gray-500">
         <span>Recibirás (est.)</span>
         <span>
-          {units.toFixed(6)} {coin.symbol.toUpperCase()}
+          {quote.units.toFixed(6)} {coin.symbol.toUpperCase()}
         </span>
+      </div>
+      <div className="flex justify-between text-xs text-gray-500">
+        <span>Comisión ({(quote.feePct * 100).toFixed(2)}%)</span>
+        <span>{eur(quote.feeEur)}</span>
       </div>
       <div className="mt-1 flex justify-between text-xs text-gray-500">
         <span>Saldo demo</span>

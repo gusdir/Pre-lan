@@ -1,4 +1,4 @@
-import type { Holding, Trade } from "../types";
+import type { Holding, Trade } from "../../types";
 
 // Motor de trading SIMULADO. No mueve dinero real.
 // Mantiene saldo en EUR y posiciones; recalcula coste medio en compras.

@@ -8,7 +8,8 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
-import { START_CASH_EUR, applyTrade } from "../lib/trading";
+import { START_CASH_EUR } from "../lib/trading";
+import { tradingProvider, type OrderInput } from "../lib/trading";
 import type { Holding, Trade } from "../types";
 
 interface PortfolioState {
@@ -26,7 +27,7 @@ interface PortfolioContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  executeTrade: (t: Omit<Trade, "id" | "created_at" | "user_id">) => Promise<void>;
+  executeTrade: (input: OrderInput) => Promise<void>;
   reload: () => Promise<void>;
 }
 
@@ -107,14 +108,15 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       .upsert({ user_id: user.id, cash_eur: state.cashEur, holdings: state.holdings });
   }
 
-  async function executeTrade(t: Omit<Trade, "id" | "created_at" | "user_id">) {
+  async function executeTrade(input: OrderInput) {
     if (!user) throw new Error("Inicia sesión para operar");
-    const result = applyTrade(cashEur, holdings, t);
+    // El proveedor (demo o real) calcula la orden y el nuevo estado de cartera.
+    const result = tradingProvider.placeOrder({ cashEur, holdings }, input);
     setCashEur(result.cashEur);
     setHoldings(result.holdings);
     await persist(result);
 
-    const row = { ...t, user_id: user.id };
+    const row = { ...result.trade, user_id: user.id };
     const { data } = await supabase.from("trades").insert(row).select().single();
     if (data) setTrades((prev) => [data as Trade, ...prev]);
   }
