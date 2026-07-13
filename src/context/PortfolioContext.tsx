@@ -12,6 +12,7 @@ import { START_CASH_EUR } from "../lib/trading";
 import { tradingProvider, type OrderInput } from "../lib/trading";
 import { depositQuote, withdrawQuote, MIN_DEPOSIT_EUR } from "../lib/account";
 import { isRealOnramp, openDeposit } from "../lib/onramp/moonpay";
+import { ensureWallet } from "../lib/onramp/wallet";
 import type { Holding, KycPayload, KycStatus, Trade } from "../types";
 
 interface PortfolioState {
@@ -168,6 +169,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     if (isRealOnramp()) {
       const wallet = import.meta.env.VITE_ONRAMP_WALLET;
       if (!wallet) throw new Error("Configura VITE_ONRAMP_WALLET para el on-ramp real.");
+      // Registra el mapeo para que el webhook sepa a quien acreditar.
+      await ensureWallet(user.id, wallet);
       openDeposit({ fiatAmount: amountEur, wallet });
       return;
     }
