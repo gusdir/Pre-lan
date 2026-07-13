@@ -3,47 +3,62 @@ import { eur, pct } from "../lib/format";
 
 export function Markets({ coins, onSelect }: { coins: Coin[]; onSelect: (c: Coin) => void }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-left text-gray-500">
-          <tr>
-            <th className="px-4 py-3 font-medium">Activo</th>
-            <th className="px-4 py-3 text-right font-medium">Precio</th>
-            <th className="px-4 py-3 text-right font-medium">24h</th>
-            <th className="px-4 py-3 text-right font-medium">Cap. mercado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {coins.map((c) => (
-            <tr
-              key={c.id}
-              onClick={() => onSelect(c)}
-              className="cursor-pointer border-t border-gray-100 hover:bg-gray-50"
-            >
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <img src={c.image} alt="" className="h-7 w-7 rounded-full" />
-                  <div>
-                    <div className="font-medium">{c.name}</div>
-                    <div className="text-xs uppercase text-gray-400">{c.symbol}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-right font-medium">{eur(c.current_price)}</td>
-              <td
-                className={`px-4 py-3 text-right font-medium ${
-                  c.price_change_percentage_24h >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {pct(c.price_change_percentage_24h)}
-              </td>
-              <td className="px-4 py-3 text-right text-gray-500">
-                {eur(c.market_cap).replace(/\.\d+$/, "")}
-              </td>
+    <div className="card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-10 bg-white/80 text-left text-xs uppercase tracking-wide text-gray-400 backdrop-blur">
+            <tr>
+              <th className="px-4 py-3 font-semibold">Activo</th>
+              <th className="px-4 py-3 text-right font-semibold">Precio</th>
+              <th className="px-4 py-3 text-right font-semibold">24h</th>
+              <th className="hidden px-4 py-3 text-right font-semibold sm:table-cell">
+                Cap. mercado
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {coins.map((c) => {
+              const up = c.price_change_percentage_24h >= 0;
+              return (
+                <tr
+                  key={c.id}
+                  onClick={() => onSelect(c)}
+                  className="cursor-pointer transition-colors hover:bg-gray-50"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={c.image}
+                        alt=""
+                        className="h-8 w-8 rounded-full ring-1 ring-gray-100"
+                      />
+                      <div>
+                        <div className="font-semibold text-gray-900">{c.name}</div>
+                        <div className="text-xs uppercase text-gray-400">{c.symbol}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="tabular px-4 py-3 text-right font-semibold text-gray-900">
+                    {eur(c.current_price)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span
+                      className={`tabular inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        up ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                      }`}
+                    >
+                      {pct(c.price_change_percentage_24h)}
+                    </span>
+                  </td>
+                  <td className="tabular hidden px-4 py-3 text-right text-gray-500 sm:table-cell">
+                    {eur(c.market_cap).replace(/\.\d+$/, "")}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

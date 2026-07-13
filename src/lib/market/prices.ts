@@ -27,9 +27,10 @@ export async function fetchMarkets(signal?: AbortSignal): Promise<Coin[]> {
 
 export async function fetchHistory(
   coinId: string,
+  days = 7,
   signal?: AbortSignal
 ): Promise<{ t: number; p: number }[]> {
-  const url = `${BASE}/coins/${coinId}/market_chart?vs_currency=eur&days=7`;
+  const url = `${BASE}/coins/${coinId}/market_chart?vs_currency=eur&days=${days}`;
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error("No se pudo obtener el histórico");
   const data = await res.json();

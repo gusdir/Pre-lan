@@ -36,7 +36,7 @@ function Shell() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="demo-banner px-4 py-1.5 text-center text-xs">
         DEMO · Entorno de prueba para España · No se mueve dinero real · Precios de
         Coinbase (EUR) en vivo

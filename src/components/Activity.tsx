@@ -13,8 +13,8 @@ export function Activity() {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 p-4">
-      <h3 className="mb-3 text-sm font-semibold">Historial de operaciones</h3>
+    <div className="card p-5">
+      <h3 className="mb-3 text-sm font-semibold text-gray-900">Historial de operaciones</h3>
       {trades.length === 0 ? (
         <p className="py-6 text-center text-sm text-gray-400">Sin operaciones aún.</p>
       ) : (

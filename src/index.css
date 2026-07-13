@@ -6,13 +6,41 @@
   color-scheme: light;
 }
 
-body {
-  margin: 0;
-  background: #ffffff;
-  color: #0a0b0d;
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+body {
+  margin: 0;
+  background: #f7f8fa;
+  color: #0a0b0d;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Cifras alineadas (precios, importes) */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Banner de demostración */
 .demo-banner {
-  background: #0052ff;
+  background: linear-gradient(90deg, #0052ff 0%, #2b7bff 100%);
   color: #fff;
+}
+
+/* Tarjeta base reutilizable */
+.card {
+  @apply rounded-2xl border border-gray-200 bg-white shadow-sm;
+}
+
+/* Scrollbar discreto */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d7dd;
+  border-radius: 999px;
+  border: 2px solid #f7f8fa;
 }
