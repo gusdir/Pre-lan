@@ -11,6 +11,7 @@ import { supabase } from "../lib/supabase";
 import { START_CASH_EUR } from "../lib/trading";
 import { tradingProvider, type OrderInput } from "../lib/trading";
 import { depositQuote, withdrawQuote, MIN_DEPOSIT_EUR } from "../lib/account";
+import { isRealOnramp, openDeposit } from "../lib/onramp/moonpay";
 import type { Holding, KycPayload, KycStatus, Trade } from "../types";
 
 interface PortfolioState {
@@ -161,6 +162,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error("Inicia sesión para operar");
     if (amountEur < MIN_DEPOSIT_EUR)
       throw new Error(`El mínimo es ${MIN_DEPOSIT_EUR} €`);
+
+    // On-ramp real: abre el widget de MoonPay. El webhook (fase posterior)
+    // acreditara la cripto en la wallet; aqui no tocamos el saldo simulado.
+    if (isRealOnramp()) {
+      const wallet = import.meta.env.VITE_ONRAMP_WALLET;
+      if (!wallet) throw new Error("Configura VITE_ONRAMP_WALLET para el on-ramp real.");
+      openDeposit({ fiatAmount: amountEur, wallet });
+      return;
+    }
+
     const { feeEur, netEur } = depositQuote(amountEur);
     const newCash = cashEur + netEur;
     setCashEur(newCash);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePortfolio } from "../context/PortfolioContext";
 import { depositQuote, withdrawQuote } from "../lib/account";
+import { isRealOnramp } from "../lib/onramp/moonpay";
 import { eur } from "../lib/format";
 
 export function FundsModal({
@@ -35,7 +36,12 @@ export function FundsModal({
   }
 
   const title = mode === "deposit" ? "Ingresar fondos" : "Retirar fondos";
-  const btn = mode === "deposit" ? "Ingresar (demo)" : "Retirar (demo)";
+  const realOnramp = mode === "deposit" && isRealOnramp();
+  const btn = realOnramp
+    ? "Continuar con MoonPay"
+    : mode === "deposit"
+    ? "Ingresar (demo)"
+    : "Retirar (demo)";
 
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4">
@@ -55,16 +61,25 @@ export function FundsModal({
           placeholder="0.00"
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
         />
-        <div className="mt-2 flex justify-between text-xs text-gray-500">
-          <span>Comisión ({(mode === "deposit" ? 1.5 : 0).toFixed(1)}%)</span>
-          <span>{eur(quote.feeEur)}</span>
-        </div>
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{mode === "deposit" ? "Entra a cartera" : "Sale de cartera"}</span>
-          <span>{eur(quote.grossEur)}</span>
-        </div>
+        {!realOnramp && (
+          <>
+            <div className="mt-2 flex justify-between text-xs text-gray-500">
+              <span>Comisión ({(mode === "deposit" ? 1.5 : 0).toFixed(1)}%)</span>
+              <span>{eur(quote.feeEur)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{mode === "deposit" ? "Entra a cartera" : "Sale de cartera"}</span>
+              <span>{eur(quote.grossEur)}</span>
+            </div>
+          </>
+        )}
         {mode === "withdraw" && (
           <p className="mt-1 text-xs text-gray-400">Saldo disponible: {eur(cashEur)}</p>
+        )}
+        {realOnramp && (
+          <p className="mt-1 rounded-lg bg-brand/5 px-2 py-1.5 text-xs text-brand">
+            Se abrirá el widget de MoonPay (EUR → cripto). El KYC lo gestiona MoonPay.
+          </p>
         )}
         {msg && <p className="mb-2 mt-2 text-xs text-red-600">{msg}</p>}
         <button
