@@ -19,6 +19,20 @@ export function TradePanel({
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const euros = parseFloat(amountEur) || 0;
+  const quote = useMemo(() => {
+    if (!coin)
+      return { units: 0, feeEur: 0, feePct: 0, netEur: 0, cashDelta: 0, valueEur: 0 };
+    return tradingProvider.quote({
+      coinId: coin.id,
+      symbol: coin.symbol,
+      side,
+      amountEur: euros,
+      priceEur: coin.current_price,
+    });
+  }, [coin, side, euros]);
+
+  // Return temprano SIEMPRE despues de declarar todos los hooks (regla de React).
   if (!coin) {
     return (
       <div className="card p-6 text-center text-sm text-gray-400">
@@ -26,19 +40,6 @@ export function TradePanel({
       </div>
     );
   }
-
-  const euros = parseFloat(amountEur) || 0;
-  const quote = useMemo(
-    () =>
-      tradingProvider.quote({
-        coinId: coin!.id,
-        symbol: coin!.symbol,
-        side,
-        amountEur: euros,
-        priceEur: coin!.current_price,
-      }),
-    [coin, side, euros]
-  );
 
   async function submit() {
     setMsg(null);
